@@ -1,0 +1,850 @@
+<title>Jelly Face</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Gluten:wght@600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* ---------- Tokens (SPEC §7). Light on bare :root, dark in both dark blocks. ---------- */
+:root {
+  --paper: #E7EAEC;
+  --panel: #F3F5F6;
+  --ink: #15181C;
+  --muted: #58616A;
+  --faint: #8A939B;
+  --line: rgba(21, 24, 28, .14);
+  --line-strong: rgba(21, 24, 28, .36);
+  --accent: #B3214D;
+  --accent-ink: #FFFFFF;
+  --live: #2B7A58;
+  --stage-bg: #DADFE3;
+  --stage-floor: #CBD2D8;
+  /* derived material tokens */
+  --knob: #FFFFFF;
+  --gloss: rgba(255, 255, 255, .92);
+  --shade: rgba(21, 24, 28, .22);
+  --scrim: rgba(16, 19, 23, .52);
+  --float: rgba(243, 245, 246, .86);
+
+  --gutter: clamp(16px, 3vw, 40px);
+  --radius: 14px;
+  --f-display: "Gluten", "Trebuchet MS", system-ui, sans-serif;
+  --f-ui: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-12: 12px;
+  --fs-13: 13px;
+  --fs-15: 15px;
+  --fs-18: 18px;
+  --fs-24: 24px;
+  --fs-hero: clamp(40px, 7vw, 88px);
+  --ease-jelly: cubic-bezier(.34, 1.56, .64, 1);
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+  --hit: 40px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #101317;
+    --panel: #171B20;
+    --ink: #E7EBEE;
+    --muted: #9BA4AD;
+    --faint: #68717A;
+    --line: rgba(231, 235, 238, .12);
+    --line-strong: rgba(231, 235, 238, .32);
+    --accent: #FF6E92;
+    --accent-ink: #1B0911;
+    --live: #5CD19B;
+    --stage-bg: #1A1F25;
+    --stage-floor: #3A424B;
+    --knob: #E7EBEE;
+    --gloss: rgba(255, 255, 255, .85);
+    --shade: rgba(0, 0, 0, .5);
+    --scrim: rgba(0, 0, 0, .62);
+    --float: rgba(23, 27, 32, .84);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #101317;
+  --panel: #171B20;
+  --ink: #E7EBEE;
+  --muted: #9BA4AD;
+  --faint: #68717A;
+  --line: rgba(231, 235, 238, .12);
+  --line-strong: rgba(231, 235, 238, .32);
+  --accent: #FF6E92;
+  --accent-ink: #1B0911;
+  --live: #5CD19B;
+  --stage-bg: #1A1F25;
+  --stage-floor: #3A424B;
+  --knob: #E7EBEE;
+  --gloss: rgba(255, 255, 255, .85);
+  --shade: rgba(0, 0, 0, .5);
+  --scrim: rgba(0, 0, 0, .62);
+  --float: rgba(23, 27, 32, .84);
+  color-scheme: dark;
+}
+@media (pointer: coarse), (max-width: 699.98px) {
+  :root { --hit: 44px; }
+}
+
+/* ---------- Base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 var(--fs-15)/1.5 var(--f-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.jf {
+  padding-inline: max(var(--gutter), env(safe-area-inset-left, 0px)) max(var(--gutter), env(safe-area-inset-right, 0px));
+  padding-block: 0 56px;
+  min-width: 0;
+}
+.jf :where(h1, h2, h3, p, dl, dd, figure) { margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+kbd {
+  font: 500 var(--fs-12)/1 var(--f-mono);
+  padding: 2px 5px;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--panel);
+}
+.label {
+  font: 500 var(--fs-12)/1.25 var(--f-mono);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+}
+.value {
+  font: 500 var(--fs-13)/1.25 var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* ---------- Masthead ---------- */
+.masthead { display: grid; gap: clamp(14px, 2vw, 22px); padding-block: 14px clamp(18px, 2.4vw, 28px); }
+.strip {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 18px;
+  padding-block: 4px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.strip .privacy-note { display: inline-flex; align-items: center; gap: 8px; }
+.strip .privacy-note svg { width: 13px; height: 13px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.title-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px clamp(24px, 4vw, 64px); }
+.wordmark {
+  font: 700 var(--fs-hero)/.9 var(--f-display);
+  letter-spacing: -.01em;
+  color: var(--ink);
+  transform-origin: 30% 100%;
+  animation: jelly-set 1.1s var(--ease-out) .1s both;
+  text-wrap: balance;
+}
+.wordmark .drop { color: var(--accent); }
+.wordmark:hover { animation: jelly-wobble .8s var(--ease-out) both; }
+@keyframes jelly-set {
+  0% { transform: translateY(-6px) scale(.98, 1.05); }
+  35% { transform: translateY(0) scale(1.07, .9); }
+  55% { transform: scale(.97, 1.04); }
+  75% { transform: scale(1.015, .985); }
+  100% { transform: none; }
+}
+@keyframes jelly-wobble {
+  0% { transform: none; }
+  20% { transform: scale(1.05, .93); }
+  45% { transform: scale(.975, 1.03); }
+  70% { transform: scale(1.012, .99); }
+  100% { transform: none; }
+}
+.dek { display: grid; font: 400 var(--fs-18)/1.35 var(--f-ui); color: var(--muted); padding-bottom: .3em; }
+.dek span:first-child { color: var(--ink); font-weight: 500; }
+
+/* ---------- Bench: stage + controls ---------- */
+.bench { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; align-items: start; }
+.stage { display: grid; gap: 12px; min-width: 0; }
+.plate { position: relative; }
+.plate::before {
+  /* registration marks at the plate corners */
+  content: ""; position: absolute; inset: -7px; pointer-events: none;
+  background:
+    linear-gradient(var(--line-strong), var(--line-strong)) left top / 11px 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) left top / 1px 11px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right top / 11px 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right top / 1px 11px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) left bottom / 11px 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) left bottom / 1px 11px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right bottom / 11px 1px no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) right bottom / 1px 11px no-repeat;
+}
+.stage-frame {
+  position: relative;
+  width: 100%;
+  height: clamp(480px, 76vh, 920px);
+  height: clamp(480px, 76svh, 920px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--stage-bg);
+  overflow: hidden;
+  isolation: isolate;
+}
+.stage-frame > canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#jelly-canvas { touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+/* The stage takes focus when it is pressed, so shortcuts (Space = pause) reach the page instead of the last
+   clicked button. A ring shows only when it was reached from the keyboard (.is-pointer-focus marks a press). */
+#jelly-canvas:focus { outline: none; }
+.stage-frame:has(> #jelly-canvas:focus-visible:not(.is-pointer-focus)) { outline: 2px solid var(--accent); outline-offset: 3px; }
+@supports not selector(:has(*)) {
+  #jelly-canvas:focus-visible:not(.is-pointer-focus) { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: calc(var(--radius) - 1px); }
+}
+.stage-frame.is-grabbing #jelly-canvas { cursor: grabbing; }
+.stage-frame.is-knife #jelly-canvas { cursor: crosshair; }
+#trail-canvas { pointer-events: none; z-index: 1; }
+.stage figcaption { font: 400 var(--fs-13)/1.45 var(--f-ui); color: var(--muted); padding-inline: 2px; }
+.stage figcaption .plate-no { font: 500 var(--fs-12)/1 var(--f-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--ink); }
+
+/* floating stage chrome */
+.stage-tools { position: absolute; top: 12px; left: 12px; z-index: 2; }
+.stage-meta { position: absolute; top: 12px; right: 12px; z-index: 2; display: flex; align-items: center; gap: 8px; }
+.status-chip {
+  font: 500 var(--fs-12)/1 var(--f-mono); text-transform: uppercase; letter-spacing: .08em;
+  padding: 8px 10px; border-radius: 999px;
+  background: var(--float); color: var(--ink); border: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.icon-btn {
+  appearance: none; -webkit-appearance: none;
+  width: var(--hit); height: var(--hit); border-radius: 50%;
+  display: inline-grid; place-items: center;
+  border: 1px solid var(--line); background: var(--float); color: var(--ink);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  cursor: pointer; transition: border-color .15s, transform .25s var(--ease-jelly);
+}
+.icon-btn:hover { border-color: var(--line-strong); }
+.icon-btn:active { transform: scale(.92); }
+.icon-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.icon-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.toasts {
+  position: absolute; left: 50%; bottom: 16px; z-index: 3;
+  width: min(calc(100% - 32px), 460px); transform: translateX(-50%);
+  display: grid; justify-items: center; gap: 8px; pointer-events: none;
+}
+.toast {
+  max-width: 100%;
+  padding: 10px 16px; border-radius: 12px;
+  background: var(--ink); color: var(--paper);
+  font: 500 var(--fs-13)/1.4 var(--f-ui); text-align: center;
+  box-shadow: 0 10px 30px -12px var(--shade);
+  opacity: 0; transform: translateY(10px) scale(.96);
+  transition: opacity .2s var(--ease-out), transform .45s var(--ease-jelly);
+}
+.toast.in { opacity: 1; transform: none; }
+.toast.out { opacity: 0; transform: translateY(6px); transition-duration: .25s; }
+/* a hint for a panel button, shown just above it when the stage (and its toast area) is scrolled out of view */
+.toasts--local { left: 0; right: 0; bottom: calc(100% + 8px); width: auto; transform: none; }
+
+.dropzone {
+  position: absolute; inset: 10px; z-index: 4;
+  display: grid; place-items: center; text-align: center; padding: 20px;
+  border: 2px dashed var(--accent); border-radius: 10px;
+  background: color-mix(in srgb, var(--stage-bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+.dropzone strong { display: block; font: 600 var(--fs-24)/1.2 var(--f-ui); color: var(--ink); }
+.dropzone span { display: block; margin-top: 6px; font: 400 var(--fs-13)/1.4 var(--f-mono); color: var(--muted); }
+
+.fallback {
+  position: absolute; inset: 0; z-index: 5;
+  display: grid; place-items: center; padding: 32px; text-align: center;
+}
+.fallback p { max-width: 42ch; font: 500 var(--fs-18)/1.45 var(--f-ui); color: var(--ink); text-wrap: balance; }
+.fallback p span { display: block; margin-top: 10px; font: 400 var(--fs-13)/1.4 var(--f-mono); color: var(--muted); }
+
+/* ---------- Controls ---------- */
+.controls { min-width: 0; }
+.controls.is-disabled { opacity: .55; }
+.ctl { display: grid; gap: 10px; padding-block: 16px 18px; border-top: 1px solid var(--line); break-inside: avoid; min-width: 0; }
+.ctl-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; }
+.ctl-sub { display: grid; gap: 6px; }
+.ctl-sub + .ctl-sub { padding-top: 10px; }
+.hint { font: 400 var(--fs-13)/1.45 var(--f-ui); color: var(--muted); min-height: 2.9em; }
+.note { font: 400 var(--fs-13)/1.45 var(--f-ui); color: var(--muted); }
+.error { font: 500 var(--fs-13)/1.45 var(--f-ui); color: var(--accent); }
+.keys { font: 400 var(--fs-12)/1.7 var(--f-mono); color: var(--muted); }
+.keys kbd { margin-inline: 1px 3px; }
+
+/* face */
+.tag {
+  font: 500 var(--fs-12)/1 var(--f-mono); text-transform: uppercase; letter-spacing: .08em;
+  padding: 5px 8px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--ink);
+}
+.face-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 16px; align-items: center; }
+.thumb { width: 64px; height: 80px; display: block; }
+.face-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; min-width: 0; }
+.face-actions .btn--primary { flex: 1 1 100%; }
+
+/* buttons */
+.btn {
+  appearance: none; -webkit-appearance: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: var(--hit); padding: 0 18px;
+  border: 1px solid var(--line-strong); border-radius: 999px;
+  background: var(--panel); color: var(--ink);
+  font: 500 var(--fs-15)/1.1 var(--f-ui); text-align: center;
+  cursor: pointer; white-space: nowrap;
+  transition: background-color .15s, border-color .15s, color .15s, transform .3s var(--ease-jelly);
+}
+.btn:hover { border-color: var(--ink); }
+.btn:active { transform: scale(.96, .93); }
+.btn--primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn--primary:hover { background: color-mix(in srgb, var(--accent) 86%, var(--ink)); border-color: color-mix(in srgb, var(--accent) 86%, var(--ink)); }
+.btn:disabled, .btn:disabled:hover { opacity: .42; cursor: not-allowed; border-color: var(--line-strong); transform: none; }
+.btn--primary:disabled:hover { background: var(--accent); border-color: var(--accent); }
+.btn-row { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.linkish {
+  appearance: none; -webkit-appearance: none; background: none; border: 0; padding: 0 2px;
+  min-height: var(--hit); cursor: pointer;
+  font: 500 var(--fs-15)/1.2 var(--f-ui); color: var(--ink);
+  text-decoration: underline; text-decoration-color: var(--line-strong); text-decoration-thickness: 1px; text-underline-offset: 4px;
+}
+.linkish:hover { text-decoration-color: var(--accent); }
+.linkish:disabled { opacity: .42; cursor: not-allowed; }
+
+/* segmented Hand / Knife */
+.seg {
+  display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; padding: 3px;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--panel);
+}
+.seg--wide { display: grid; }
+.seg--float {
+  background: var(--float); box-shadow: 0 6px 20px -10px var(--shade);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.seg button {
+  appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: var(--muted);
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: var(--hit); padding: 0 16px; border-radius: 999px;
+  font: 500 var(--fs-15)/1 var(--f-ui); cursor: pointer;
+  transition: background-color .2s, color .2s;
+}
+.seg--float button { font-size: var(--fs-13); padding: 0 14px; }
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.seg button:disabled { opacity: .45; cursor: not-allowed; }
+.seg svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* flavor swatches */
+.swatches { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; padding-bottom: 12px; }
+.swatch { position: relative; display: grid; place-items: center; height: 46px; cursor: pointer; }
+.swatch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.swatch input:disabled { cursor: not-allowed; }
+.swatch .chip {
+  width: 30px; height: 30px; border-radius: 50%; pointer-events: none;
+  background:
+    radial-gradient(circle at 34% 30%, var(--gloss) 0 2.5px, transparent 5px),
+    radial-gradient(circle at 50% 64%, var(--c1) 0 34%, var(--c2) 150%);
+  box-shadow: inset 0 0 0 1px rgba(21, 24, 28, .12), 0 1px 3px var(--shade);
+  transition: transform .4s var(--ease-jelly), box-shadow .2s;
+}
+.swatch:hover .chip { transform: scale(1.1, .94); }
+.swatch input:checked + .chip {
+  transform: scale(1.04);
+  box-shadow: inset 0 0 0 1px rgba(21, 24, 28, .12), 0 0 0 3px var(--paper), 0 0 0 4.5px var(--ink);
+}
+.swatch input:focus-visible + .chip { outline: 2px solid var(--accent); outline-offset: 7px; }
+.swatch .name {
+  position: absolute; top: calc(100% - 3px); left: 50%; transform: translate(-50%, -3px);
+  font: 500 var(--fs-12)/1 var(--f-mono); color: var(--ink); white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity .15s, transform .25s var(--ease-out);
+}
+.swatch:hover .name, .swatch input:focus-visible ~ .name { opacity: 1; transform: translate(-50%, 0); }
+
+/* ranges: thin track, jelly thumb */
+.range {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 30px; margin: 0; padding: 0; background: transparent; cursor: pointer;
+  --fill: 50%;
+}
+.range:focus-visible { outline: none; }
+.range::-webkit-slider-runnable-track {
+  height: 3px; border-radius: 3px;
+  background: linear-gradient(to right, var(--accent) 0 var(--fill), var(--line-strong) var(--fill) 100%);
+}
+.range::-moz-range-track { height: 3px; border-radius: 3px; background: var(--line-strong); }
+.range::-moz-range-progress { height: 3px; border-radius: 3px; background: var(--accent); }
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 22px; height: 20px; margin-top: -8.5px; border: 0;
+  border-radius: 52% 48% 46% 50% / 58% 56% 44% 42%;
+  background:
+    radial-gradient(circle at 34% 30%, var(--gloss) 0 2.5px, transparent 4.5px),
+    radial-gradient(circle at 50% 72%, color-mix(in srgb, var(--accent) 62%, var(--knob)) 0, var(--accent) 78%);
+  box-shadow: 0 0 0 2px var(--paper), 0 2px 5px var(--shade);
+  transition: transform .45s var(--ease-jelly), box-shadow .15s;
+}
+.range::-moz-range-thumb {
+  width: 22px; height: 20px; border: 0;
+  border-radius: 52% 48% 46% 50% / 58% 56% 44% 42%;
+  background:
+    radial-gradient(circle at 34% 30%, var(--gloss) 0 2.5px, transparent 4.5px),
+    radial-gradient(circle at 50% 72%, color-mix(in srgb, var(--accent) 62%, var(--knob)) 0, var(--accent) 78%);
+  box-shadow: 0 0 0 2px var(--paper), 0 2px 5px var(--shade);
+  transition: transform .45s var(--ease-jelly), box-shadow .15s;
+}
+.range:hover::-webkit-slider-thumb { transform: scale(1.08, .95); }
+.range:active::-webkit-slider-thumb { transform: scale(1.24, .8); }
+.range:hover::-moz-range-thumb { transform: scale(1.08, .95); }
+.range:active::-moz-range-thumb { transform: scale(1.24, .8); }
+.range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--accent); }
+.range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--accent); }
+.range:disabled { cursor: not-allowed; }
+@media (pointer: coarse), (max-width: 699.98px) { .range { height: 44px; } }
+.ends { display: flex; justify-content: space-between; gap: 12px; margin-top: -4px; font: 400 var(--fs-12)/1.2 var(--f-mono); color: var(--muted); }
+
+/* switches */
+.switches { display: grid; }
+.switch-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: var(--hit); cursor: pointer; font: 400 var(--fs-15)/1.2 var(--f-ui);
+}
+.switch-row + .switch-row { border-top: 1px dashed var(--line); }
+.switch { position: relative; flex: none; width: 36px; height: 22px; }
+.switch input {
+  -webkit-appearance: none; appearance: none; position: absolute; inset: 0; margin: 0;
+  border-radius: 999px; background: var(--line-strong); cursor: pointer;
+  transition: background-color .2s;
+}
+.switch input:checked { background: var(--accent); }
+.switch input:disabled { cursor: not-allowed; }
+.switch .knob {
+  position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--knob); box-shadow: 0 1px 3px var(--shade); pointer-events: none;
+  transition: transform .4s var(--ease-jelly);
+}
+.switch input:checked + .knob { transform: translateX(14px); }
+.switch input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* readouts */
+.live { display: inline-flex; align-items: center; gap: 7px; font: 500 var(--fs-12)/1 var(--f-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--live); }
+.live-dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.live-dot::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; border: 1px solid currentColor;
+  animation: live-ring 1.8s var(--ease-out) infinite;
+}
+/* idle text stays at --muted (AA at 12px in both themes); only the dot goes faint */
+.live.is-idle { color: var(--muted); }
+.live.is-idle .live-dot { background: var(--faint); }
+.live.is-idle .live-dot::after { animation: none; opacity: 0; }
+@keyframes live-ring { 0% { transform: scale(1); opacity: .9; } 100% { transform: scale(2.6); opacity: 0; } }
+.readouts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+.ro { display: grid; gap: 3px; min-width: 0; }
+.ro dt { font: 500 var(--fs-12)/1.2 var(--f-mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.ro dd { font: 500 var(--fs-18)/1.15 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+.ro .unit { margin-left: 5px; font: 400 var(--fs-12)/1 var(--f-mono); color: var(--muted); }
+.mesh-line { font: 400 var(--fs-12)/1.4 var(--f-mono); font-variant-numeric: tabular-nums; color: var(--muted); padding-top: 10px; border-top: 1px dashed var(--line); }
+
+/* ---------- How it works ---------- */
+.how { display: grid; gap: 22px; margin-top: clamp(40px, 6vw, 72px); padding-top: 18px; border-top: 1px solid var(--line-strong); }
+.how-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; }
+.how h2 { font: 600 var(--fs-24)/1.2 var(--f-ui); letter-spacing: -.005em; }
+.how-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px clamp(20px, 2.6vw, 44px); }
+.how article { display: grid; align-content: start; gap: 8px; padding-top: 14px; border-top: 1px solid var(--line); min-width: 0; }
+.how h3 { font: 600 var(--fs-18)/1.25 var(--f-ui); text-wrap: balance; }
+.how article p:not(.label) { font: 400 var(--fs-15)/1.55 var(--f-ui); color: var(--muted); max-width: 68ch; }
+.how article p b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.how .privacy { font: 400 var(--fs-13)/1.5 var(--f-mono); color: var(--muted); max-width: 90ch; }
+
+/* ---------- Align dialog ---------- */
+.align {
+  width: min(940px, calc(100vw - 32px)); max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px); max-height: calc(100svh - 32px);
+  padding: 0; overflow: auto; overscroll-behavior: contain;
+  border: 1px solid var(--line); border-radius: 18px;
+  background: var(--panel); color: var(--ink);
+  box-shadow: 0 30px 80px -30px var(--shade);
+}
+.align::backdrop { background: rgba(10, 12, 15, .55); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+.align[open] { animation: dialog-in .35s var(--ease-out); }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+.align :where(h2, p) { margin: 0; }
+.align-top { display: grid; gap: 6px; padding: 20px 22px 0; }
+.align-top h2 { font: 600 var(--fs-24)/1.2 var(--f-ui); }
+.align-top p { font: 400 var(--fs-15)/1.45 var(--f-ui); color: var(--muted); max-width: 60ch; }
+/* Side by side: the view column is sized from the width it may take (never squeezed below the 240px side
+   column), and the view gets its height from that width, so it stays 4:5 at every dialog width. */
+.align-body {
+  display: grid; gap: 24px; padding: 18px 22px 22px; align-items: start;
+  grid-template-columns: min(calc(min(62vh, 600px) * .8), 100% - 264px) minmax(240px, 1fr);
+  grid-template-columns: min(calc(min(62svh, 600px) * .8), 100% - 264px) minmax(240px, 1fr);
+}
+.align-view {
+  position: relative; aspect-ratio: 4 / 5; width: 100%; height: auto;
+  border-radius: 12px; overflow: hidden; background: var(--stage-bg); border: 1px solid var(--line);
+}
+#align-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: move; }
+#align-canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 12px; }
+.align-side { display: flex; flex-direction: column; gap: 18px; min-width: 0; align-self: stretch; }
+.align-side .ctl-sub + .ctl-sub { padding-top: 0; }
+.align-status { font: 400 var(--fs-13)/1.45 var(--f-mono); color: var(--live); min-height: 1.45em; }
+.align-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--line); }
+.align-actions .spacer { flex: 1 1 0; }
+/* A narrow side column (tablet portrait, small phones) can't fit the three actions on one row: Reset and Cancel
+   share the first row and the primary "Pour jelly" spans the second, instead of wrapping on its own at the left. */
+.align-side { container-type: inline-size; }
+@container (max-width: 319.98px) {
+  .align-actions .btn { flex: 1 1 auto; }
+  .align-actions .spacer { display: none; }
+  .align-actions #align-pour { flex-basis: 100%; }
+}
+@media (max-width: 719.98px) {
+  .align-top { padding: 16px 16px 0; }
+  .align-top h2 { font-size: var(--fs-18); }
+  .align-top p { font-size: var(--fs-13); }
+  .align-body { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 12px 16px 0; }
+  .align-view { height: min(50vh, calc((100vw - 66px) * 1.25)); height: min(50svh, calc((100vw - 66px) * 1.25)); width: auto; justify-self: center; }
+  .align-side { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; }
+  .align-side .keys { display: none; }
+  .align-status, .align-actions { grid-column: 1 / -1; }
+  .align-status:empty { display: none; }
+  .align-actions { position: sticky; bottom: 0; z-index: 1; padding-block: 12px 16px; background: var(--panel); }
+  .align-actions .btn { flex: 1 1 auto; padding-inline: 14px; }
+  .align-actions .spacer { display: none; }
+}
+/* Short, wide viewports (phone landscape, short windows): the view takes the dialog's full height on the left,
+   the title, sliders and actions stack beside it, and the actions stay pinned to the bottom, so the whole
+   dialog fits on screen without scrolling. */
+@media (max-height: 560px) and (min-width: 560px) {
+  .align {
+    width: min(940px, calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+    max-height: calc(100vh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100svh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+  .align[open] {
+    display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px 20px; padding: 12px 16px 12px 12px;
+  }
+  .align-body { display: contents; }
+  .align-view {
+    grid-column: 1; grid-row: 1 / -1; justify-self: start; width: auto;
+    height: min(600px, calc(100vh - 42px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+    height: min(600px, calc(100svh - 42px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+  }
+  .align-top { grid-column: 2; grid-row: 1; gap: 4px; padding: 0; }
+  .align-top h2 { font-size: var(--fs-18); }
+  .align-top p { font-size: var(--fs-13); }
+  .align-side {
+    grid-column: 2; grid-row: 2; align-self: stretch;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto minmax(0, 1fr); gap: 8px 18px;
+  }
+  .align-side .keys { grid-column: 1 / -1; grid-row: 2; }
+  .align-status { grid-column: 1 / -1; grid-row: 3; }
+  .align-status:empty { display: none; }
+  .align-actions {
+    grid-column: 1 / -1; grid-row: 4; align-self: end;
+    position: sticky; bottom: 0; z-index: 1; margin-top: 0; padding-block: 10px 0; background: var(--panel);
+  }
+  .align-actions .spacer { display: block; }
+}
+@media (pointer: coarse) {
+  .keys { display: none; }
+}
+
+/* ---------- Layout breakpoints ---------- */
+@media (min-width: 1000px) {
+  .bench { grid-template-columns: minmax(0, 1fr) clamp(300px, 27vw, 390px); gap: clamp(28px, 2.6vw, 44px); }
+  .stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  .controls .ctl:first-child { padding-top: 12px; }
+}
+/* Wide desktop: the panel folds into two balanced columns (Face and Readouts span both), so it stands about
+   as tall as the stage instead of twice as tall, and the extra width goes to the panel, not to empty space. */
+@media (min-width: 1180px) {
+  .bench { grid-template-columns: minmax(0, 1fr) clamp(500px, 40vw, 720px); }
+  .controls { columns: 2; column-gap: clamp(24px, 2.4vw, 40px); column-rule: 1px solid var(--line); column-fill: balance; }
+  .controls .ctl { padding-block: 14px 16px; }
+  .controls .ctl:first-child { padding-top: 12px; }
+  .controls .ctl--span { column-span: all; }
+  /* Face: thumbnail on the left, one row of actions with the note under it */
+  .controls .ctl--face { grid-template-columns: 64px minmax(0, 1fr); column-gap: 16px; row-gap: 8px; }
+  .controls .ctl--face > .ctl-head { grid-column: 1 / -1; margin-bottom: 2px; }
+  .controls .ctl--face .face-row { display: contents; }
+  .controls .ctl--face .thumb { grid-column: 1; grid-row: 2 / span 2; align-self: start; }
+  .controls .ctl--face .face-actions, .controls .ctl--face .note, .controls .ctl--face .error { grid-column: 2; }
+  .controls .ctl--face .face-actions { gap: 8px; }
+  .controls .ctl--face .face-actions .btn { padding-inline: 14px; }
+  .controls .ctl--face .face-actions .btn--primary { flex: 0 1 auto; }
+  .controls .ctl--readouts { gap: 8px; }
+  .controls .readouts { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 14px; }
+  .controls .ro dd { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 5px; }
+  .controls .ro .unit { margin-left: 0; }
+  .controls .mesh-line { padding-top: 8px; }
+}
+@media (min-width: 1180px) and (pointer: fine) {
+  .controls .switch-row { min-height: 34px; }
+}
+@media (min-width: 700px) and (max-width: 999.98px) {
+  .stage-frame { height: 62vh; height: 62svh; min-height: 420px; }
+  .controls { columns: 2 280px; column-gap: 36px; column-rule: 1px solid var(--line); }
+  .how-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 860px) and (max-width: 999.98px) {
+  .controls { columns: 3 220px; }
+}
+@media (max-width: 699.98px) {
+  .stage-frame { height: auto; aspect-ratio: 4 / 5; max-height: 78vh; max-height: 78svh; max-width: 100%; }
+  .how-grid { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .title-row { align-items: flex-start; }
+  .dek { font-size: var(--fs-15); }
+  .stage-tools { top: 10px; left: 10px; }
+  .stage-meta { top: 10px; right: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important; scroll-behavior: auto !important;
+  }
+  .live-dot::after { display: none; }
+}
+</style>
+
+<div class="jf">
+  <div class="masthead" role="banner">
+    <div class="strip label">
+      <span>Gelatin Studies · Plate 3</span>
+      <span class="privacy-note"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>Photos stay in this browser</span>
+    </div>
+    <div class="title-row">
+      <h1 class="wordmark">Jelly Face<span class="drop">.</span></h1>
+      <p class="dek"><span>Your face, set in gelatin.</span><span>Pull it, slice it, watch it wobble.</span></p>
+    </div>
+  </div>
+
+  <main class="bench">
+    <figure class="stage" id="stage">
+      <div class="plate">
+        <div class="stage-frame" id="stage-frame">
+          <canvas id="jelly-canvas" tabindex="0" role="img" aria-keyshortcuts="H K Space N R M" aria-label="A face set in a block of jelly on a cutting mat. Drag to pull it, or switch to the knife to slice it. Keys: H hand, K knife, Space pause, N nudge, R pour again, M mesh."></canvas>
+          <canvas id="trail-canvas" aria-hidden="true"></canvas>
+
+          <div class="stage-tools seg seg--float" role="group" aria-label="Tool">
+            <button type="button" id="stage-tool-hand" data-tool="hand" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12.5V5.8a1.4 1.4 0 0 1 2.8 0V11"/><path d="M10.8 10.5V4.6a1.4 1.4 0 0 1 2.8 0v5.9"/><path d="M13.6 10.6V5.9a1.4 1.4 0 0 1 2.8 0v4.8"/><path d="M16.4 10.8V8.4a1.4 1.4 0 0 1 2.8 0v5.3c0 4-2.6 6.8-6.4 6.8-2.6 0-4.1-1.1-5.4-3.1l-2.6-4.2a1.4 1.4 0 0 1 2.3-1.6L8 13.5"/></svg>Hand</button>
+            <button type="button" id="stage-tool-knife" data-tool="knife" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l4.8-4.8"/><path d="M8.3 15.7L19.2 4.8c1.3 2.9.3 6.6-3 9.3l-2.6 2.1-2.2-2.2"/></svg>Knife</button>
+          </div>
+
+          <div class="stage-meta">
+            <span class="status-chip" id="stage-status" hidden>Paused</span>
+            <button type="button" class="icon-btn" id="btn-recenter" aria-label="Reset view" title="Reset view"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.2"/><path d="M12 2.8v3.4M12 17.8v3.4M2.8 12h3.4M17.8 12h3.4"/></svg></button>
+          </div>
+
+          <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+          <div class="dropzone" id="dropzone" hidden>
+            <div><strong>Drop the photo</strong><span>You line it up before it is poured.</span></div>
+          </div>
+
+          <div class="fallback" id="stage-fallback" hidden>
+            <p>This page needs WebGL 2 to draw the jelly. Try a current version of Chrome, Safari, Edge or Firefox.<span>The controls are switched off until it can draw.</span></p>
+          </div>
+        </div>
+      </div>
+      <figcaption><span class="plate-no">Plate 3</span> — portrait in gelatin, 2.6 cm thick, on a 1 cm cutting grid.</figcaption>
+    </figure>
+
+    <aside class="controls" id="controls" aria-label="Jelly controls">
+      <section class="ctl ctl--span ctl--face" aria-labelledby="lbl-face">
+        <div class="ctl-head">
+          <h2 class="label" id="lbl-face">Face</h2>
+          <span class="tag" id="face-kind">Sample face</span>
+        </div>
+        <div class="face-row">
+          <canvas class="thumb" id="face-thumb" width="128" height="160" role="img" aria-label="Current face"></canvas>
+          <div class="face-actions">
+            <button type="button" class="btn btn--primary" id="btn-choose">Choose a face photo</button>
+            <button type="button" class="btn" id="btn-adjust" disabled>Adjust fit</button>
+            <button type="button" class="linkish" id="btn-sample">Use the sample face</button>
+          </div>
+        </div>
+        <p class="note" id="face-note">JPG, PNG or WebP. Drop or paste an image anywhere on the page.</p>
+        <p class="error" id="face-error" role="alert" hidden></p>
+      </section>
+
+      <section class="ctl" aria-labelledby="lbl-tool">
+        <div class="ctl-head">
+          <h2 class="label" id="lbl-tool">Tool</h2>
+          <span class="keys"><kbd>H</kbd><kbd>K</kbd></span>
+        </div>
+        <div class="seg seg--wide" role="group" aria-labelledby="lbl-tool">
+          <button type="button" id="tool-hand" data-tool="hand" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12.5V5.8a1.4 1.4 0 0 1 2.8 0V11"/><path d="M10.8 10.5V4.6a1.4 1.4 0 0 1 2.8 0v5.9"/><path d="M13.6 10.6V5.9a1.4 1.4 0 0 1 2.8 0v4.8"/><path d="M16.4 10.8V8.4a1.4 1.4 0 0 1 2.8 0v5.3c0 4-2.6 6.8-6.4 6.8-2.6 0-4.1-1.1-5.4-3.1l-2.6-4.2a1.4 1.4 0 0 1 2.3-1.6L8 13.5"/></svg>Hand</button>
+          <button type="button" id="tool-knife" data-tool="knife" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 20.5l4.8-4.8"/><path d="M8.3 15.7L19.2 4.8c1.3 2.9.3 6.6-3 9.3l-2.6 2.1-2.2-2.2"/></svg>Knife</button>
+        </div>
+        <p class="hint" id="tool-hint">Drag the jelly to pull it. Drag the background to turn the view. Tap to poke.</p>
+      </section>
+
+      <section class="ctl" aria-labelledby="lbl-flavor">
+        <div class="ctl-head">
+          <h2 class="label" id="lbl-flavor">Flavor</h2>
+          <span class="value" id="flavor-name">Clear</span>
+        </div>
+        <div class="swatches" role="radiogroup" aria-labelledby="lbl-flavor">
+          <label class="swatch" style="--c1:#ffffff;--c2:#f3dccb"><input type="radio" name="flavor" id="flavor-clear" value="clear" aria-label="Clear" checked><span class="chip" aria-hidden="true"></span><span class="name" aria-hidden="true">Clear</span></label>
+          <label class="swatch" style="--c1:#ffc2cb;--c2:#d81b3f"><input type="radio" name="flavor" id="flavor-strawberry" value="strawberry" aria-label="Strawberry"><span class="chip" aria-hidden="true"></span><span class="name" aria-hidden="true">Strawberry</span></label>
+          <label class="swatch" style="--c1:#d8f7b5;--c2:#4aa323"><input type="radio" name="flavor" id="flavor-lime" value="lime" aria-label="Lime"><span class="chip" aria-hidden="true"></span><span class="name" aria-hidden="true">Lime</span></label>
+          <label class="swatch" style="--c1:#c9d8ff;--c2:#2e58d6"><input type="radio" name="flavor" id="flavor-blueberry" value="blueberry" aria-label="Blueberry"><span class="chip" aria-hidden="true"></span><span class="name" aria-hidden="true">Blueberry</span></label>
+          <label class="swatch" style="--c1:#ffe0c2;--c2:#ee8a3a"><input type="radio" name="flavor" id="flavor-peach" value="peach" aria-label="Peach"><span class="chip" aria-hidden="true"></span><span class="name" aria-hidden="true">Peach</span></label>
+          <label class="swatch" style="--c1:#e5cbff;--c2:#7c34c6"><input type="radio" name="flavor" id="flavor-grape" value="grape" aria-label="Grape"><span class="chip" aria-hidden="true"></span><span class="name" aria-hidden="true">Grape</span></label>
+        </div>
+      </section>
+
+      <section class="ctl">
+        <div class="ctl-head">
+          <label class="label" for="firmness">Firmness</label>
+          <output class="value" id="firmness-out" for="firmness">201 Bloom</output>
+        </div>
+        <input class="range" type="range" id="firmness" min="0" max="1" step="0.01" value="0.55">
+        <div class="ends" aria-hidden="true"><span>wobbly</span><span>firm set</span></div>
+      </section>
+
+      <section class="ctl">
+        <div class="ctl-head">
+          <label class="label" for="damping">Internal damping</label>
+          <output class="value" id="damping-out" for="damping">0.45</output>
+        </div>
+        <input class="range" type="range" id="damping" min="0" max="1" step="0.01" value="0.45">
+        <div class="ends" aria-hidden="true"><span>springy</span><span>syrupy</span></div>
+      </section>
+
+      <section class="ctl">
+        <div class="ctl-sub">
+          <div class="ctl-head">
+            <label class="label" for="depth">Face depth</label>
+            <output class="value" id="depth-out" for="depth">1.00</output>
+          </div>
+          <input class="range" type="range" id="depth" min="0" max="1.6" step="0.01" value="1">
+          <div class="ends" aria-hidden="true"><span>flat</span><span>deep</span></div>
+        </div>
+        <div class="ctl-sub">
+          <div class="ctl-head">
+            <label class="label" for="emboss">Photo emboss</label>
+            <output class="value" id="emboss-out" for="emboss">0.30</output>
+          </div>
+          <input class="range" type="range" id="emboss" min="0" max="1" step="0.01" value="0.3">
+          <div class="ends" aria-hidden="true"><span>smooth</span><span>carved</span></div>
+        </div>
+      </section>
+
+      <section class="ctl">
+        <div class="ctl-head">
+          <label class="label" for="clarity">Clarity</label>
+          <output class="value" id="clarity-out" for="clarity">0.55</output>
+        </div>
+        <input class="range" type="range" id="clarity" min="0" max="1" step="0.01" value="0.55">
+        <div class="ends" aria-hidden="true"><span>cloudy</span><span>glassy</span></div>
+      </section>
+
+      <section class="ctl" aria-labelledby="lbl-actions">
+        <h2 class="label" id="lbl-actions">Actions</h2>
+        <div class="btn-row">
+          <div class="toasts toasts--local" id="actions-toasts" role="status" aria-live="polite"></div>
+          <button type="button" class="btn" id="btn-nudge">Nudge</button>
+          <button type="button" class="btn" id="btn-pour">Pour again</button>
+        </div>
+        <div class="switches">
+          <label class="switch-row" for="opt-quarter"><span>¼ speed</span><span class="switch"><input type="checkbox" role="switch" id="opt-quarter"><span class="knob" aria-hidden="true"></span></span></label>
+          <label class="switch-row" for="opt-mesh"><span>Show mesh</span><span class="switch"><input type="checkbox" role="switch" id="opt-mesh"><span class="knob" aria-hidden="true"></span></span></label>
+          <label class="switch-row" for="opt-pause"><span>Pause</span><span class="switch"><input type="checkbox" role="switch" id="opt-pause"><span class="knob" aria-hidden="true"></span></span></label>
+        </div>
+        <p class="keys"><kbd>N</kbd>nudge · <kbd>R</kbd>pour · <kbd>M</kbd>mesh · <kbd>Space</kbd>pause</p>
+      </section>
+
+      <section class="ctl ctl--span ctl--readouts" aria-labelledby="lbl-readouts">
+        <div class="ctl-head">
+          <h2 class="label" id="lbl-readouts">Readouts</h2>
+          <span class="live" id="live"><span class="live-dot" aria-hidden="true"></span><span id="live-text">Live</span></span>
+        </div>
+        <dl class="readouts">
+          <div class="ro"><dt>Mass</dt><dd><span id="ro-mass">–</span><span class="unit">g</span></dd></div>
+          <div class="ro"><dt>Volume</dt><dd><span id="ro-volume">–</span><span class="unit">% of rest</span></dd></div>
+          <div class="ro"><dt>Kinetic</dt><dd><span id="ro-kinetic">–</span><span class="unit">µJ</span></dd></div>
+          <div class="ro"><dt>Pieces</dt><dd><span id="ro-pieces">–</span></dd></div>
+        </dl>
+        <p class="mesh-line"><span id="ro-particles">–</span> particles · <span id="ro-tets">–</span> tetrahedra</p>
+      </section>
+    </aside>
+  </main>
+
+  <section class="how" id="how-it-works" aria-labelledby="how-title">
+    <div class="how-head">
+      <h2 id="how-title">How it works</h2>
+      <p class="label">Notes on plate 3</p>
+    </div>
+    <div class="how-grid">
+      <article>
+        <p class="label">Physics</p>
+        <h3>Built from tetrahedra</h3>
+        <p>The jelly is <b data-live="particles">a few hundred</b> particles joined into <b data-live="tets">about a thousand</b> tetrahedra. Each frame runs 10 short XPBD substeps: every edge tries to keep its rest length and every tetrahedron its volume, and firmness sets how much they give. Damping only removes motion between neighbors, so the whole block still falls and bounces freely.</p>
+      </article>
+      <article>
+        <p class="label">Cutting</p>
+        <h3>Slicing</h3>
+        <p>Your stroke and your eye define a flat blade. The cut is traced back onto the jelly's rest shape, where the outline is split along that line and the new corners are rounded so no piece keeps a razor edge. Each piece is remeshed from scratch, then takes over the positions and speeds of the old jelly, so it keeps moving the way it was.</p>
+      </article>
+      <article>
+        <p class="label">Surface</p>
+        <h3>A face that rides along</h3>
+        <p>The photo sits on a surface mesh much finer than the one the physics uses. Each surface point is pinned inside one tetrahedron by barycentric weights, so it follows every stretch and squash. Under the photo is a sculpted relief with a generic nose, brow, cheeks and lips, plus a light emboss taken from the shading of the photo itself.</p>
+      </article>
+      <article>
+        <p class="label">Optics</p>
+        <h3>Light through gelatin</h3>
+        <p>The jelly is drawn as a see-through material, so the cutting grid bends as you look through it. Flavor tints the photo lightly and absorbs more color the farther light travels inside, which is why thick parts look richer. A clear coat on top adds the wet highlight that makes gelatin look like gelatin.</p>
+      </article>
+    </div>
+    <p class="privacy">Your photo is read locally with the File API. Nothing is uploaded or stored; reloading the page forgets it.</p>
+  </section>
+</div>
+
+<dialog class="align" id="align-dialog" aria-labelledby="align-title" aria-describedby="align-help">
+  <div class="align-top">
+    <h2 id="align-title">Line up the face</h2>
+    <p id="align-help">Drag the photo until the eyes sit in the rings and the mouth rests on the line. Scroll or pinch to zoom.</p>
+  </div>
+  <div class="align-body">
+    <div class="align-view" id="align-view">
+      <canvas id="align-canvas" tabindex="0" autofocus role="img" aria-label="Photo under the face window. Arrow keys move it, plus and minus zoom."></canvas>
+    </div>
+    <div class="align-side">
+      <div class="ctl-sub">
+        <div class="ctl-head">
+          <label class="label" for="align-zoom">Zoom</label>
+          <output class="value" id="align-zoom-out" for="align-zoom">1.00×</output>
+        </div>
+        <input class="range" type="range" id="align-zoom" min="1" max="6" step="0.01" value="1">
+      </div>
+      <div class="ctl-sub">
+        <div class="ctl-head">
+          <label class="label" for="align-rotate">Rotate</label>
+          <output class="value" id="align-rotate-out" for="align-rotate">0°</output>
+        </div>
+        <input class="range" type="range" id="align-rotate" min="-30" max="30" step="0.5" value="0">
+      </div>
+      <p class="keys"><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd>move · <kbd>+</kbd><kbd>−</kbd>zoom</p>
+      <p class="align-status" id="align-status" aria-live="polite"></p>
+      <div class="align-actions">
+        <button type="button" class="btn" id="align-reset">Reset fit</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn" id="align-cancel">Cancel</button>
+        <button type="button" class="btn btn--primary" id="align-pour">Pour jelly</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<input type="file" id="face-file" accept="image/*" hidden>
+
+<script src="https://cdn.jsdelivr.net/npm/delaunator@5.0.1/delaunator.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
+<!--APP_SCRIPT-->

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+shots/
+.DS_Store
+
+# Internal build notes (contain local machine paths)
+SPEC.md
+NOTES-*.md
+INTEGRATION.md
+FIXES.md
+BUILD-*.json
+REVIEW-FINDINGS.json
