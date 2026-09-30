@@ -1,14 +1,14 @@
 // Assembles src/*.js + src/shell.html into one self-contained artifact page.
 //   dist/jelly-face.html  -> the artifact body (no doctype/html/head/body: the host adds the skeleton)
 //   dist/preview.html     -> the same page wrapped in a skeleton like the host's, for local testing
-//   docs/index.html       -> copy of preview.html served by GitHub Pages (main branch, /docs)
+//   index.html            -> copy of preview.html served by GitHub Pages (main branch, root)
 //
 // Module conventions (enforced here, see SPEC.md §2):
 //   - exports:   only `export function NAME`, `export class NAME`, `export const|let NAME`
 //   - sibling imports: `import { a, b as c } from './geom.js';` or `import * as G from './geom.js';`
 //   - three imports: `import * as THREE from 'three';` and `import { X } from 'three/addons/...';`
 // Each module is wrapped in its own function scope, so top-level names never collide.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -79,8 +79,7 @@ ${page}
 </body></html>`;
 writeFileSync(join(root, 'dist', 'preview.html'), preview);
 
-mkdirSync(join(root, 'docs'), { recursive: true });
-writeFileSync(join(root, 'docs', 'index.html'), preview);
-writeFileSync(join(root, 'docs', '.nojekyll'), '');
+writeFileSync(join(root, 'index.html'), preview);
+writeFileSync(join(root, '.nojekyll'), '');
 
 console.log(`built dist/jelly-face.html (${(page.length / 1024).toFixed(1)} KB)`);

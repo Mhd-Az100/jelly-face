@@ -37,7 +37,7 @@ Photos are read locally in the browser with the File API. Nothing is uploaded or
 | `src/app.js` | UI: photo picker and align dialog, controls, pointer input, readouts |
 | `src/shell.html` | Page markup and styles |
 | `build.mjs` | Bundles `src/` into one HTML file |
-| `docs/index.html` | Built page served by GitHub Pages |
+| `index.html` | Built page served by GitHub Pages |
 | `test/` | Node tests for geometry and physics |
 | `tools/shot.mjs` | Headless Chrome screenshot harness |
 
@@ -47,10 +47,10 @@ Requires Node 20+.
 
 ```sh
 npm install
-node build.mjs                 # writes dist/ and docs/index.html
+node build.mjs                 # writes dist/ and index.html
 node test/geom.test.mjs        # geometry checks
 node test/physics.test.mjs     # physics checks (~30 s)
 ```
 
-Open `docs/index.html` in a browser to try it locally (it loads three.js and fonts from CDNs).
+Open `index.html` in a browser to try it locally (it loads three.js and fonts from CDNs).
 `tools/shot.mjs` expects Google Chrome at the default macOS location.
